@@ -8,7 +8,8 @@ router.post("/", (req, res) => {
   let search_term = "Crypto Head of Marketing"
   let skills = "SEO, SEM, Crypto"
 
-  const API_KEY = "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"
+  //const API_KEY = "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"
+  const API_KEY = "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"
   const textURL = "https://api.openai.com/v1/completions"
   // const imageURL = "https://api.openai.com/v1/images/generations"
 
@@ -38,7 +39,6 @@ router.post("/", (req, res) => {
       const responseData = await response.json()
       return responseData.choices[0].text || false
     } catch (error) {
-      console.log(error?.message)
       res.send(error?.message)
     }
   }
@@ -51,23 +51,17 @@ router.post("/", (req, res) => {
     const url = `${apiUrl}?apiId=${apiId}&data=${encodeURIComponent(
       linkedinUrl
     )}&personFull=true`
+    const response = await fetch(url)
 
-    try {
-      const response = await fetch(url)
+    let personInfo = await response.json()
 
-      let personInfo = await response.json()
-
-      return personInfo
-    } catch (error) {
-      console.error(error)
-      return null
-    }
+    return personInfo
   }
 
   async function handlePostRequest() {
     const personData = await fetchCandidateData(linkedin_url)
 
-    const prompt = `Analyse the profile data and give me the following information regarding the role ${search_term} and his skills ${skills}:
+    const prompt = `Analyse the profile data and give me the following information regarding the role ${search_term} and the following skills ${skills}:
     - Give me a short summary according to the role of ${search_term}, no more than 20 words
     - Relevant Skills: his 5 key relevant skills for the role of ${search_term}
     - Relevant key traits: his 5 relevant key traits for this role
@@ -79,20 +73,23 @@ router.post("/", (req, res) => {
     - Sentiment Analysis: sentiment between matching profile data and the role (positive, neutral, negative)
     - Ready to move: based on his only the latest active role, if he has more than 2 years it means that he is ready to move, then say yes otherwise no. Give me in a shortened way and keywords only.
     
-    Profile data: ${personData}`
+    Profile data: ${JSON.stringify(personData)}`
 
     // res.send(personData)
 
     const result = await createTextRequest(prompt)
 
     let finalAdvice =
-      (result && result.split("\n").map((r) => r.split(":"))) || ""
+      (result && result.split("\n").map((r) => r.split(":"))) || []
 
-    finalAdvice = finalAdvice.filter((fa) => fa.length > 1)
+    console.log(finalAdvice)
+
+    finalAdvice = finalAdvice && finalAdvice.filter((fa) => fa && fa.length > 1)
 
     let advice = {
       finalAdvice
     }
+    console.log(advice)
     res.send(advice)
   }
 

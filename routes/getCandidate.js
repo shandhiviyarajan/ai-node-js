@@ -10,7 +10,7 @@ router.post("/", (req, res) => {
   // Setting up headers for GPT API request
   const GPTheaders = {
     "Content-Type": "application/json",
-    Authorization: `Bearer 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`
+    Authorization: `Bearer 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`
   }
   let emailQuery,
     Role,
@@ -30,7 +30,7 @@ router.post("/", (req, res) => {
   }
 
   let find_with_email = {
-    value: data.is_email
+    value: data.email
   }
 
   let pagination_numbers = {
@@ -178,7 +178,7 @@ router.post("/", (req, res) => {
   }
 
   // Defining the array to store all candidates
-  let allCandidates = []
+
   let promises = []
 
   // Function to fetch all pages
@@ -217,10 +217,36 @@ router.post("/", (req, res) => {
       }
     })
   }
+  //enrich candidates
+  const enrichEachCandidate = async (linkedinURL) => {
+    let datagmaURL = "https://gateway.datagma.net/api/ingress/v2/full"
+    let API_KEY = [
+      "9d661a9a1f47",
+      "0icR9YHm",
+      "TondByn1",
+      "9d661a9a1f47",
+      "0icR9YHm",
+      "TondByn1"
+    ]
+
+    var randomIndex = Math.floor(Math.random() * API_KEY.length)
+    let fetchURL = `${datagmaURL}?apiId=${API_KEY[randomIndex]}&data=${linkedinURL}&personFull=true`
+    let enrichResponse = await fetch(fetchURL, options).then((results) =>
+      results.text()
+    )
+
+    let data = JSON.parse(enrichResponse)
+    if (data?.error) {
+      res.send(data)
+    }
+    return data || []
+  }
 
   // Defining the array for pagination
   const paginations = new Array(pagination_numbers.value).fill(0)
   let finalGoogleResults = []
+  let promisesEnrich = []
+  let enrichedResults = ""
   ;(async () => {
     cquery = await returnPromptResults(paginations)
     cquery.forEach((element) => {
@@ -255,11 +281,24 @@ router.post("/", (req, res) => {
         ...result
       }
     })
-    // Send the results back as a response
-    res.send({
-      total: fullResults.length,
-      results: fullResults
-    })
+
+    if (data.enrich) {
+      finalGoogleResults.map((result) => {
+        promisesEnrich.push(enrichEachCandidate(result.link))
+      })
+      enrichedResults = await Promise.all(promisesEnrich)
+
+      res.send({
+        total: enrichedResults.length,
+        enrichedResults
+      })
+    } else {
+      // Send the results back as a response
+      res.send({
+        total: fullResults.length,
+        results: fullResults
+      })
+    }
   })()
 })
 

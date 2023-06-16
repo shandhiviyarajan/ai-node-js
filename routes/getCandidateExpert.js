@@ -6,11 +6,13 @@ router.post("/", (req, res) => {
   let data = req.body
 
   let role = data.jobRole
-  let isEmail = data.is_email
+  let similarJobs = data.similarjob
+  let isEmail = data.email
   let skill = data.skill.map((s) => `"${s}"`).join(" OR ")
   let extended_role = new Array(1).fill(role)
+
   if (!data.job_role_exact_search) {
-    extended_role.push(...data.similarjob)
+    extended_role.push(...similarJobs)
   }
   let emailQuery = ""
   let city = data.location_city
@@ -74,7 +76,6 @@ router.post("/", (req, res) => {
     const response = await fetch(fetchURL, options).then((results) =>
       results.text()
     )
-
     let data = JSON.parse(response)
     if (data?.error) {
       res.send(data)
@@ -130,7 +131,7 @@ router.post("/", (req, res) => {
   const paginations = new Array(data.pagination).fill(0)
   let finalGoogleResults = []
   let promisesEnrich = []
-  let is_enrichement = data.is_enrichement
+  let is_enrichement = data.enrich
   let enrichedResults = ""
   ;(async () => {
     cquery = await returnPromptResults(paginations)
